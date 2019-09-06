@@ -138,7 +138,7 @@ class Bar {
     
     // hide original axes
     selectAll('path.domain')
-      .attr('stroke', 'transparent')
+      // .attr('stroke', 'transparent')
   }
 
 
@@ -152,7 +152,7 @@ class Bar {
     .selectAll('path.domain').each(function(d, i) {
       let pathD = select(this).node().getAttribute('d');
       let roughXAxis = rcAxis.path(pathD, {
-        stroke: 'black',
+        stroke: 'blue',
         fillStyle: 'hachure',
         roughness: 1.,
         });
@@ -165,8 +165,9 @@ class Bar {
   select(`.${yAxisClass}`)
     .selectAll('path.domain').each(function(d, i) {
       let pathD = select(this).node().getAttribute('d');
+      console.log('pathd', select(this).node())
       let roughYAxis = rcAxis.path(pathD, {
-        stroke: 'black',
+        stroke: 'blue',
         fillStyle: 'hachure',
         roughness: 2,
         });
@@ -275,7 +276,7 @@ addInteraction() {
     this.initRoughObjects()
     this.addScales()
     this.addAxes()
-    this.makeAxesRough(this.roughSvg, this.rcAxis)
+    // this.makeAxesRough(this.roughSvg, this.rcAxis)
 
     // Add barplot
     this.data.forEach((d) => {

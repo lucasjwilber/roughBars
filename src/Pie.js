@@ -1,34 +1,29 @@
 
-import { max } from 'd3-array';
-import { axisBottom, axisLeft } from 'd3-axis';
-import { csv, tsv } from 'd3-fetch';
-import { scaleBand, scaleLinear } from 'd3-scale';
+// import { max } from 'd3-array';
+// import { axisBottom, axisLeft } from 'd3-axis';
+import { formatRgb, rgb } from 'd3-color';
+import { csv, tsv, json } from 'd3-fetch';
+import { scaleBand, scaleOrdinal } from 'd3-scale';
 import { mouse, select, selectAll } from 'd3-selection';
+import { arc, pie } from 'd3-shape';
 import rough from 'roughjs/dist/rough.umd';
 
 const roughCeiling = (roughness) => {
-    let roughVal = roughness > 20 ? 20 : roughness;
+    let roughVal = roughness > 30 ? 30 : roughness;
     return  roughVal
   }
 
-class BarH {
-
-  // same methods
-  // roughCeiling
-  // initChartValues
-  // setSvg
-  // resolveData
-  // setTitle
-  // initRoughObjects
+class Pie {
 
     constructor(opts) {
       // load in arguments from config object
       this.el = opts.element;
       // this.data = opts.data;
       this.element = opts.element;
-      this.margin = opts.margin ? opts.margin : {top: 50, right: 20, bottom: 50, left: 100}
+      this.margin = opts.margin ? opts.margin : {top: 200, right: 20, bottom: 50, left: 100}
       this.title = opts.title;
-      this.color = opts.color ? opts.color : 'skyblue';
+      this.colors = opts.colors ? opts.colors : ['coral', 'skyblue', "#66c2a5","tan","#8da0cb",
+       "#e78ac3","#a6d854","#ffd92f", 'coral', 'skyblue', 'tan', 'orange'];
       this.highlight = opts.highlight ? opts.highlight : 'coral';
       this.roughness = opts.roughness ? roughCeiling(opts.roughness) : 1;
       this.stroke = opts.stroke ? opts.stroke : 'black';
@@ -54,6 +49,7 @@ class BarH {
       this.roughId = this.el + "_svg";
       this.graphClass = this.el.substring(1, this.el.length);
       this.interactionG = "g." + this.graphClass;
+      this.radius = Math.min(this.width, this.height) / 2;
       this.setSvg()
   }
 
@@ -78,14 +74,23 @@ class BarH {
 	  			csv(data).then(d => {
             console.log(d)
 			      this.data = d;
-				  this.draw()
+				    this.draw()
 			    })
 			   }
   		} else if (data.includes('.tsv')) {
         return () => {
           tsv(data).then(d => {
+            console.log(d)
             this.data = d;
-          this.draw()
+            this.draw()
+          })
+         }
+      } else if (data.includes('.json')) {
+        return () => {
+          json(data).then((d) => {
+            console.log(d);
+            this.data = d;
+            this.draw()
           })
          }
       }
@@ -104,87 +109,6 @@ class BarH {
   	}
   }
 
-  addScales() {
-    const that = this;
-    this.yScale = scaleBand()
-      .rangeRound([0, this.height])
-      .padding(0.1)
-      .domain(this.data.map(function (d) { return d[that.labels]; }));
-
-    this.xScale = scaleLinear()
-      .rangeRound([0, this.width])
-        .domain([0, max(this.data, function (d) { return +d[that.values]; })]);
-  }
-
-
-  addAxes() {
-  	    // AXES
-    const xAxis = axisBottom()
-      .scale(this.xScale);
-    const yAxis = axisLeft()
-      .scale(this.yScale);
-        // x-axis
-    this.svg.append("g")
-    .attr("transform", `translate(0, ${this.height})`)
-    .call(axisBottom(this.xScale))
-    .attr('class', `xAxis${this.graphClass}`)
-    .selectAll("text")
-      .attr("transform", "translate(-10,0)rotate(-45)")
-      .style("text-anchor", "end")
-      .style('font-family', 'Gaegu')
-      .style('font-size', '.95rem')
-      .style('opacity', .85);
-
-    // y-axis
-    this.svg.append("g")
-      .call(axisLeft(this.yScale))
-      .attr('class', `yAxis${this.graphClass}`)
-      .selectAll('text')
-      .style('font-family', 'Gaegu')
-      .style('font-size', '.95rem')
-      .style('opacity', .85);
-
-    
-    // hide original axes
-    selectAll('path.domain')
-      // .attr('stroke', 'transparent')
-  }
-
-
- makeAxesRough(roughSvg, rcAxis) {
-
-  let xAxisClass = `xAxis${this.graphClass}`
-  let yAxisClass = `yAxis${this.graphClass}`
-  let roughXAxisClass = `rough-${xAxisClass}`
-  let roughYAxisClass = `rough-${yAxisClass}`
-
-    select(`.${xAxisClass}`)
-    .selectAll('path.domain').each(function(d, i) {
-      let pathD = select(this).node().getAttribute('d');
-      let roughXAxis = rcAxis.path(pathD, {
-        stroke: 'black',
-        fillStyle: 'hachure',
-        roughness: 1.,
-        });
-      roughXAxis.setAttribute('class', roughXAxisClass);
-      roughSvg.appendChild(roughXAxis);
-    })
-  selectAll(`.${roughXAxisClass}`)
-    .attr('transform', `translate(0, ${this.height})`)
-
-  select(`.${yAxisClass}`)
-    .selectAll('path.domain').each(function(d, i) {
-      let pathD = select(this).node().getAttribute('d');
-      let roughYAxis = rcAxis.path(pathD, {
-        stroke: 'black',
-        fillStyle: 'hachure',
-        roughness: 2,
-        });
-      roughYAxis.setAttribute('class', roughYAxisClass);
-      roughSvg.appendChild(roughYAxis);
-    })
- }
-
 setTitle(title) {
   this.svg.append("text")
     .attr("x", (this.width / 2))             
@@ -198,15 +122,14 @@ setTitle(title) {
 }
 
 addInteraction() {
-   // add highlight helper dom nodes
-  selectAll(this.interactionG)
-    .data(this.data)
-    .append('rect')
-    .attr('x', 0)
-    .attr('y', d => this.yScale(d[this.labels]))
-    .attr('width', d => this.xScale(+d[this.values]))
-    .attr('height', this.yScale.bandwidth())
-    .attr('fill', 'transparent');
+   selectAll(this.interactionG)
+      .append("g")
+      .attr("transform", `translate(${this.width / 2}, ${this.height / 2})`)
+        .data(this.makePie(this.data))
+        .append("path")
+        .attr("d", this.makeArc)
+        .attr("stroke-width", "0px")
+        .attr('fill', 'transparent')
 
 
   // create tooltip
@@ -229,7 +152,9 @@ addInteraction() {
       Tooltip
         .style("opacity",  1)
     }
-    let that = this
+
+    let that = this;
+    let thisColor;
 
     var mousemove = function(d) {
       let attrX = select(this).attr('attrX');
@@ -242,7 +167,7 @@ addInteraction() {
         .attr('class', function(d) {
         })
         .style('transform', `translate(${mousePos[0] + that.margin.left}px, 
-                            ${mousePos[1] - (that.height + that.margin.top + that.margin.bottom)}px)`)
+                            ${mousePos[1] - that.height - that.margin.bottom}px)`)
       }
       var mouseleave = function(d) {
         Tooltip
@@ -253,13 +178,18 @@ addInteraction() {
       selectAll(this.interactionG)
         .on('mouseover', function() {
           mouseover()
-          select(this).select('path').style('stroke', that.highlight)
+          thisColor = select(this).selectAll('path').style('stroke');
+          console.log('color')
+          console.log(rgb(thisColor))
+          console.log(rgb(thisColor).darker(1))
+          // select(this).selectAll('path').style('stroke', rgb(thisColor).darker())
+          select(this).selectAll('path').style('stroke', 'tan')
         })
 
       selectAll(this.interactionG)
       .on('mouseout', function() {
         mouseleave()
-        select(this).select('path').style('stroke', that.color)
+        select(this).selectAll('path').style('stroke', thisColor)
       })
 
       selectAll(this.interactionG)
@@ -283,21 +213,39 @@ addInteraction() {
 
   draw() {
     this.initRoughObjects()
-    this.addScales()
-    this.addAxes()
-    // this.makeAxesRough(this.roughSvg, this.rcAxis)
 
-    // Add barplot
-    this.data.forEach((d) => {
-      let node = this.rc.rectangle(
-                  0,
-                  this.yScale(d[this.labels]),
-                  this.xScale(+d[this.values]), 
-                  this.yScale.bandwidth());
-      let roughNode = this.roughSvg.appendChild(node);
-      roughNode.setAttribute('class', this.graphClass);
-      roughNode.setAttribute('attrX', d[this.labels])
-      roughNode.setAttribute('attrY', +d[this.values]) 
+    this.makePie = pie()
+      .value(d => d[this.labels])
+      .sort(null);
+
+    this.makeArc = arc()
+        .innerRadius(0)
+        .outerRadius(this.radius);
+
+    this.arcs = this.makePie(this.data)
+
+    this.arcs.forEach((d,i) => {
+        let c = this.makeArc.centroid(d);
+        let node = this.rc.arc(
+                    this.width/2, //x
+                    this.height/2, //y
+                    2 * this.radius, //width
+                    2 * this.radius, //height
+                    d.startAngle- Math.PI/2, //start
+                    d.endAngle- Math.PI/2, //stop
+                    true, {
+                  fill: this.colors[i],
+                  stroke: this.colors[i],
+                  strokeWidth: 1,
+                  roughness: this.roughness,
+                  bowing: this.bowing,
+                  fillStyle: this.fillStyle
+      });
+        node.setAttribute('class', this.graphClass)
+        node.setAttribute('x1', c[0])
+        node.setAttribute('x2', c[1])
+        node.setAttribute('label', d.data[this.values])
+        let roughNode = this.roughSvg.appendChild(node);
     });
 
    // If desired, add interactivity
@@ -309,4 +257,4 @@ addInteraction() {
 
 }
 
-export default BarH;
+export default Pie;
