@@ -24,12 +24,16 @@ class Pie {
       this.title = opts.title;
       this.colors = opts.colors ? opts.colors : ['coral', 'skyblue', "#66c2a5","tan","#8da0cb",
        "#e78ac3","#a6d854","#ffd92f", 'coral', 'skyblue', 'tan', 'orange'];
-      this.highlight = opts.highlight ? opts.highlight : 'coral';
+      this.highlight = opts.highlight ? opts.highlight : 'tan';
       this.roughness = opts.roughness ? roughCeiling(opts.roughness) : 1;
       this.stroke = opts.stroke ? opts.stroke : 'black';
       this.strokeWidth = opts.strokeWidth ? opts.strokeWidth : 0.6;
       this.labels = opts.labels; //label
       this.values = opts.values; //column
+      if (this.labels === undefined || this.values === undefined) {
+        console.log(`Error for ${this.el}: Must include labels and values when instantiating Pie chart. Skipping chart.`);
+        return
+      }
       this.fillStyle = opts.fillStyle;
       this.bowing = opts.bowing ? opts.bowing : 0;
       this.interactive = (typeof opts.interactive  === 'undefined') ? true : opts.interactive;
@@ -62,7 +66,6 @@ class Pie {
         .attr('id', this.roughId)
         .attr("transform",
               "translate(" + this.margin.left + "," + this.margin.top + ")")
-    console.log(this.graphClass, this.height)
 
   }
 
@@ -179,11 +182,8 @@ addInteraction() {
         .on('mouseover', function() {
           mouseover()
           thisColor = select(this).selectAll('path').style('stroke');
-          console.log('color')
-          console.log(rgb(thisColor))
-          console.log(rgb(thisColor).darker(1))
           // select(this).selectAll('path').style('stroke', rgb(thisColor).darker())
-          select(this).selectAll('path').style('stroke', 'tan')
+          select(this).selectAll('path').style('stroke', that.highlight)
         })
 
       selectAll(this.interactionG)
@@ -215,7 +215,7 @@ addInteraction() {
     this.initRoughObjects()
 
     this.makePie = pie()
-      .value(d => d[this.labels])
+      .value(d => d[this.values])
       .sort(null);
 
     this.makeArc = arc()
@@ -236,16 +236,18 @@ addInteraction() {
                     true, {
                   fill: this.colors[i],
                   stroke: this.colors[i],
-                  strokeWidth: 1,
+                  strokeWidth: this.strokeWidth,
                   roughness: this.roughness,
                   bowing: this.bowing,
                   fillStyle: this.fillStyle
       });
         node.setAttribute('class', this.graphClass)
-        node.setAttribute('x1', c[0])
-        node.setAttribute('x2', c[1])
-        node.setAttribute('label', d.data[this.values])
+        // node.setAttribute('x1', c[0])
+        // node.setAttribute('x2', c[1])
+        // node.setAttribute('label', d.data[this.labels])
         let roughNode = this.roughSvg.appendChild(node);
+        roughNode.setAttribute('attrY', d.data[this.values])
+        roughNode.setAttribute('attrX', d.data[this.labels]) 
     });
 
    // If desired, add interactivity
