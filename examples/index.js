@@ -1,20 +1,46 @@
 import roughBars from '../src';
 
+
+new roughBars.Bar(
+  {
+      element: '#lucasPractice',
+      data: "https://raw.githubusercontent.com/jwilber/random_data/master/owTanks.csv",
+      width: 600,
+      height: 600,
+      title: "OW Tank Health",
+      labels: 'name',
+      values: 'health',
+      roughness: 5,
+      margin: {top: 50, right: 20, bottom: 150, left: 100},
+      highlight: 'gold',
+      fillStyle: 'zigzag-line'
+  }
+);
+
+
+
+
+
+
+
+
+
+
 new roughBars.Donut(
     {
       element: '#vis0',
         data: "https://raw.githubusercontent.com/jwilber/jenkem_data/master/regions.json",
-        title: `Donut Chart`,
+        title: `Regions`,
         labels: 'region',
         values: 'count',
-        width: 500,
-        roughness: 1,
+        width: 200,
+        roughness: 0,
         radius: 'petal_width',
         colors: ['pink', 'coral', 'teal', 'skyblue'],
         bowing: .1,
         highlight: 'gold',
         // stroke: 'black',
-        strokeWidth: 2,
+        // strokeWidth: 2,
         fillStyle: 'zigzag-line',
         height: 450,
         curbZero: false,
